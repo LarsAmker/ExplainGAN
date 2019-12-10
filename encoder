@@ -1,0 +1,16 @@
+# Copied from https://blog.keras.io/building-autoencoders-in-keras.html, added flattening at the end
+# This is the encoder part of a conv. autoencoder applied to MNIST. Notice the MaxPooling. Maybe change later on
+def make_encoder_model():
+    model = tf.keras.Sequential()
+    model.add(layers.Conv2D(16, (3, 3), activation='sigmoid', padding='same', use_bias=True,
+                                     input_shape=[28, 28, 1]))
+    model.add(layers.MaxPooling2D((2,2), padding='same'))
+    model.add(layers.Conv2D(8, (3, 3), activation='sigmoid', padding='same', use_bias=True))
+    model.add(layers.MaxPooling2D((2,2), padding='same'))
+    model.add(layers.Conv2D(8, (3, 3), activation='sigmoid', padding='same', use_bias=True))
+    model.add(layers.MaxPooling2D((2,2), padding='same'))
+    model.add(layers.Flatten())
+    
+    return model
+# At this point the representation is (4, 4, 8) i.e. 128-dimensional
+# The convolutions here don't decrease the 2D dimension because they have default (1,1) strides. The MaxPooling does
