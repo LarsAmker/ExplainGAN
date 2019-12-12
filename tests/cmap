@@ -1,0 +1,11 @@
+# just some testing of how cmap='gray' works
+masktest = tf.ones([3,3], tf.float32)
+plt.figure(figsize=(10,10))
+plt.subplot(1,4,1)
+plt.imshow(masktest, cmap='gray')
+realtest = tf.zeros([3,3])
+plt.subplot(1,4,2)
+plt.imshow(realtest, cmap = 'gray')
+trafotest = tf.constant([[-0.5,1,1],[0,0.5,0],[0,0,0]], dtype=tf.float32)
+plt.subplot(1,4,3)
+plt.imshow(trafotest, cmap='gray')
