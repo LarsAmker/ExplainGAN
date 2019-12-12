@@ -1,157 +1,104 @@
-# From DCGAN original: Notice the use of `tf.function`
-# This annotation causes the function to be "compiled".
-#@tf.function # produces an error in my code, if I leave it away there is no problem
-def train_step(images): # images is the whole batch of real images fed into the machine in one training step
-    predicted_classes = classifier.predict(images)
-    predicted_classes = np.argmax(predicted_classes, axis=1) # now we have the actual predictions
-    predicted_classes = tf.reshape(predicted_classes, [-1,1]) # make it compatible with tensors below
-    predicted_classes = tf.cast(predicted_classes, tf.float32) # change type to float for multiplications
-    
-    # More components (8 to be precise) in this network than in DCGAN -> Needs more gradient tapes
-    # List: enc4_tape, enc9_tape, gen_start_tape, recon_tape, trafo_tape, disc4_tape, disc9_tape
-    with tf.GradientTape() as enc4_tape, tf.GradientTape() as enc9_tape, tf.GradientTape() as gen_start_tape, tf.GradientTape() as recon_tape, tf.GradientTape() as trafo_tape, tf.GradientTape() as mask_tape, tf.GradientTape() as disc4_tape, tf.GradientTape() as disc9_tape:
-      # Put all images through _both_ streams. Only use one of them for each image for loss computation
-      z_as4 = encoder4(images)
-      z_as9 = encoder9(images)
-      # 'middle step', apply the part of the generator shared by trafo, recon and mask
-      gen_from_pred4 = generator_start(z_as4)
-      gen_from_pred9 = generator_start(z_as9)
-      # reconstructions, transformations and masks, then create composites
-      recon_from_pred4 = reconstructor(gen_from_pred4)
-      recon_from_pred9 = reconstructor(gen_from_pred9)
-      trafo_from_pred4 = transformator(gen_from_pred4)
-      trafo_from_pred9 = transformator(gen_from_pred9)
-      mask_from_pred4 = mask(gen_from_pred4)
-      mask_from_pred9 = mask(gen_from_pred9) 
-      comp_from_pred4 = create_composite(images, trafo_from_pred4, mask_from_pred4)
-      comp_from_pred9 = create_composite(images, trafo_from_pred9, mask_from_pred9)
-      
-      # loss weights: Scale everything to be close to 3 (leave the only negative loss, GAN loss, which is around -2.8 untouched)
-      # I might need to change a lot here. No idea about the weights used by Silberman
-      weight_c = 0.33
-      weight_r = 0.004
-      weight_cs = 0.004
-      weight_ct = 300
-      weight_sm = 0.15
-      weight_en = 8.5
+# TESTING FIELD 2.0 -> Used to change stuff in the training step. The most up-to-date version is in the training step
+images = test_images
+predicted_classes = classifier.predict(images)
+predicted_classes = np.argmax(predicted_classes, axis=1) # now we have the actual predictions
+predicted_classes = tf.reshape(predicted_classes, [-1,1]) # make it compatible with tensors below
+predicted_classes = tf.cast(predicted_classes, tf.float32) # change type to float for multiplications
 
-      # now we need to get the losses right
-      # GAN loss - first create all necessary discriminator outputs
-      real_output4 = discriminator4(images)
-      real_output9 = discriminator9(images)
-      recon_output4 = discriminator4(recon_from_pred4)
-      recon_output9 = discriminator9(recon_from_pred9)
-      trafo_output4 = discriminator9(trafo_from_pred4) # now use the opposite discriminators
-      trafo_output9 = discriminator4(trafo_from_pred9)
-      comp_output4 = discriminator9(comp_from_pred4)
-      comp_output9 = discriminator4(comp_from_pred9)
-      # now calculate the loss (split up by predicted class, not by produced class as in Silberman's paper)
-      #loss_gan_p9_real = loss_gan_real(real_output9)
-      #loss_gan_p9_recon = loss_gan_recon(recon_output9)
-      #loss_gan_p9_trafo = loss_gan_trafo(trafo_output9)
-      #loss_gan_p9_comp = loss_gan_comp(comp_output9)
-      #loss_gan_pred9 = loss_gan_p9_real + loss_gan_p9_recon + loss_gan_p9_trafo + loss_gan_p9_comp
-      loss_gan_pred4 = loss_gan(real_output4, recon_output4, trafo_output4, comp_output4)
-      loss_gan_pred9 = loss_gan(real_output9, recon_output9, trafo_output9, comp_output9)
-      loss_g4 = tf.math.multiply(1-predicted_classes, loss_gan_pred4)
-      loss_g9 = tf.math.multiply(predicted_classes, loss_gan_pred9)
-      loss_g = loss_g4 + loss_g9
-      
-      # classifier loss - first we need to create predictions for our composite images
-      pred_comp_from_pred4 = classifier(comp_from_pred4)
-      pred_comp_from_pred4 = pred_comp_from_pred4[:,1] # not argmax here, we need the probability of a 9
-      pred_comp_from_pred4 = tf.reshape(pred_comp_from_pred4, [-1,1])
-      pred_comp_from_pred4 = tf.cast(pred_comp_from_pred4, tf.float32)
-      pred_comp_from_pred9 = classifier(comp_from_pred9)
-      pred_comp_from_pred9 = pred_comp_from_pred9[:,1] # not argmax here, we need the probability
-      pred_comp_from_pred9 = tf.reshape(pred_comp_from_pred9, [-1,1])
-      pred_comp_from_pred9 = tf.cast(pred_comp_from_pred9, tf.float32)
-      # now calculate the loss
-      loss_class_pred4 = loss_classifier4(pred_comp_from_pred4) # put a composite 9 into the loss_c for predictions 4
-      loss_class_pred9 = loss_classifier9(pred_comp_from_pred9)
-      loss_c4 = tf.math.multiply(1-predicted_classes, loss_class_pred4)
-      loss_c9 = tf.math.multiply(predicted_classes, loss_class_pred9)
-      loss_c = (loss_c4 + loss_c9) * weight_c
-      
-      # reconstruction loss loss_r
-      loss_recon4 = loss_recon(images, recon_from_pred4)
-      loss_recon9 = loss_recon(images, recon_from_pred9)
-      loss_r4 = tf.math.multiply(1-predicted_classes, loss_recon4) # set the loss for the wrong recons to 0
-      loss_r9 = tf.math.multiply(predicted_classes, loss_recon9) # set the loss for the wrong recons to 0
-      loss_r = (loss_r4 + loss_r9) * weight_r
+# More components (8 to be precise) in this network than in DCGAN -> Needs more gradient tapes
+# List: enc4_tape, enc9_tape, gen_start_tape, recon_tape, trafo_tape, disc4_tape, disc9_tape
+with tf.GradientTape() as enc4_tape, tf.GradientTape() as enc9_tape, tf.GradientTape() as gen_start_tape, tf.GradientTape() as recon_tape, tf.GradientTape() as trafo_tape, tf.GradientTape() as mask_tape, tf.GradientTape() as disc4_tape, tf.GradientTape() as disc9_tape:
+  # Put all images through _both_ streams. Only use one of them for each image for loss computation
+  z_as4 = encoder4(images)
+  z_as9 = encoder9(images)
+  # 'middle step', apply the part of the generator shared by trafo and recon
+  gen_from_pred4 = generator_start(z_as4)
+  gen_from_pred9 = generator_start(z_as9)
+  # reconstructions, transformations and masks, then create composites
+  recon_from_pred4 = reconstructor(gen_from_pred4)
+  recon_from_pred9 = reconstructor(gen_from_pred9)
+  trafo_from_pred4 = transformator(gen_from_pred4)
+  trafo_from_pred9 = transformator(gen_from_pred9)
+  mask_from_pred4 = mask(gen_from_pred4)
+  mask_from_pred9 = mask(gen_from_pred9) 
+  comp_from_pred4 = create_composite(images, trafo_from_pred4, mask_from_pred4)
+  comp_from_pred9 = create_composite(images, trafo_from_pred9, mask_from_pred9)
+  
+  # now we need to get the losses right
+  # GAN loss - first create all necessary discriminator outputs
+  real_output4 = discriminator4(images)
+  real_output9 = discriminator9(images)
+  recon_output4 = discriminator4(recon_from_pred4)
+  recon_output9 = discriminator9(recon_from_pred9)
+  trafo_output4 = discriminator9(trafo_from_pred4) # now use the opposite discriminators
+  trafo_output9 = discriminator4(trafo_from_pred9)
+  comp_output4 = discriminator9(comp_from_pred4)
+  comp_output9 = discriminator4(comp_from_pred9)
+  # now calculate the loss (split up by predicted class, not by produced class as in Silberman's paper)
+  loss_gan_pred4 = loss_gan(real_output4, recon_output4, trafo_output4, comp_output4)
+  loss_gan_pred9 = loss_gan(real_output9, recon_output9, trafo_output9, comp_output9)
+  loss_g4 = tf.math.multiply(1-predicted_classes, loss_gan_pred4)
+  loss_g9 = tf.math.multiply(predicted_classes, loss_gan_pred9)
+  loss_g = loss_g4 + loss_g9
+  
+  # classifier loss - first we need to create predictions for our composite images
+  pred_comp_from_pred4 = classifier(comp_from_pred4)
+  pred_comp_from_pred4 = pred_comp_from_pred4[:,1] # not argmax here, we need the probability of a 9
+  pred_comp_from_pred4 = tf.reshape(pred_comp_from_pred4, [-1,1])
+  #pred_comp_from_pred4 = tf.cast(pred_comp_from_pred4, tf.float32)
+  pred_comp_from_pred9 = classifier(comp_from_pred9)
+  pred_comp_from_pred9 = pred_comp_from_pred9[:,1] # not argmax here, we need the probability
+  pred_comp_from_pred9 = tf.reshape(pred_comp_from_pred9, [-1,1])
+  #pred_comp_from_pred9 = tf.cast(pred_comp_from_pred9, tf.float32)
+  # now calculate the loss
+  loss_class_pred4 = loss_classifier4(pred_comp_from_pred4) # put a composite 9 into the loss_c for predictions 4
+  loss_class_pred9 = loss_classifier9(pred_comp_from_pred9)
+  loss_c4 = tf.math.multiply(1-predicted_classes, loss_class_pred4)
+  loss_c9 = tf.math.multiply(predicted_classes, loss_class_pred9)
+  loss_c = loss_c4 + loss_c9
+  
+  # reconstruction loss loss_r
+  loss_recon4 = loss_recon(images, recon_from_pred4)
+  loss_recon9 = loss_recon(images, recon_from_pred9)
+  loss_r4 = tf.math.multiply(1-predicted_classes, loss_recon4) # set the loss for the wrong recons to 0
+  loss_r9 = tf.math.multiply(predicted_classes, loss_recon9) # set the loss for the wrong recons to 0
+  loss_r = loss_r4 + loss_r9
 
-      # the 4 prior losses, try kappa=0.03 in loss_count
-      kappa = 0.03
-      loss_const4 = loss_const(images, trafo_from_pred4, mask_from_pred4)
-      loss_const9 = loss_const(images, trafo_from_pred9, mask_from_pred9)
-      loss_cs4 = tf.math.multiply(1-predicted_classes, loss_const4)
-      loss_cs9 = tf.math.multiply(predicted_classes, loss_const9)
-      loss_cs = (loss_cs4 + loss_cs9) * weight_cs
-      loss_count4 = loss_count(mask_from_pred4, kappa)
-      loss_count9 = loss_count(mask_from_pred9, kappa)
-      loss_ct4 = tf.math.multiply(1-predicted_classes, loss_count4)
-      loss_ct9 = tf.math.multiply(predicted_classes, loss_count9)
-      loss_ct = (loss_ct4 + loss_ct9) * weight_ct
-      loss_smooth4 = loss_smoothness(mask_from_pred4)
-      loss_smooth9 = loss_smoothness(mask_from_pred9)
-      loss_sm4 = tf.math.multiply(1-predicted_classes, loss_smooth4)
-      loss_sm9 = tf.math.multiply(predicted_classes, loss_smooth9)
-      loss_sm = (loss_sm4 + loss_sm9) * weight_sm
-      loss_entropy4 = loss_entropy(mask_from_pred4)
-      loss_entropy9 = loss_entropy(mask_from_pred9)
-      loss_en4 = tf.math.multiply(1-predicted_classes, loss_entropy4)
-      loss_en9 = tf.math.multiply(predicted_classes, loss_entropy9)
-      loss_en = (loss_en4 + loss_en9) * weight_en
+  # the 4 prior losses, try kappa=0.03 in loss_count
+  kappa = 0.03
+  loss_const4 = loss_const(images, trafo_from_pred4, mask_from_pred4)
+  loss_const9 = loss_const(images, trafo_from_pred9, mask_from_pred9)
+  loss_cs4 = tf.math.multiply(1-predicted_classes, loss_const4)
+  loss_cs9 = tf.math.multiply(predicted_classes, loss_const9)
+  loss_cs = loss_cs4 + loss_cs9
+  loss_count4 = loss_count(mask_from_pred4, kappa)
+  loss_count9 = loss_count(mask_from_pred9, kappa)
+  loss_ct4 = tf.math.multiply(1-predicted_classes, loss_count4)
+  loss_ct9 = tf.math.multiply(predicted_classes, loss_count9)
+  loss_ct = loss_ct4 + loss_ct9
+  loss_smooth4 = loss_smoothness(mask_from_pred4)
+  loss_smooth9 = loss_smoothness(mask_from_pred9)
+  loss_sm4 = tf.math.multiply(1-predicted_classes, loss_smooth4)
+  loss_sm9 = tf.math.multiply(predicted_classes, loss_smooth9)
+  loss_sm = loss_sm4 + loss_sm9
+  loss_entropy4 = loss_entropy(mask_from_pred4)
+  loss_entropy9 = loss_entropy(mask_from_pred9)
+  loss_en4 = tf.math.multiply(1-predicted_classes, loss_entropy4)
+  loss_en9 = tf.math.multiply(predicted_classes, loss_entropy9)
+  loss_en = loss_en4 + loss_en9
 
-      # Add up losses that are used together
-      loss_summed = loss_g + loss_c + loss_r 
-      loss_prior = loss_cs + loss_ct + loss_sm + loss_en
+  loss_prior = loss_cs + loss_ct + loss_sm + loss_en
 
-      # Mask uses the prior losses only and discriminators use GAN loss only. The rest uses GAN, classifier and recon loss  
-      gradients_of_enc4 = enc4_tape.gradient(loss_summed, encoder4.trainable_variables)
-      gradients_of_enc9 = enc9_tape.gradient(loss_summed, encoder9.trainable_variables)
-      gradients_of_gen_start = gen_start_tape.gradient(loss_summed, generator_start.trainable_variables)
-      gradients_of_recon = recon_tape.gradient(loss_summed, reconstructor.trainable_variables)
-      gradients_of_trafo = trafo_tape.gradient(loss_g + loss_c, transformator.trainable_variables)
-      gradients_of_mask = mask_tape.gradient(loss_prior + loss_g + loss_c, mask.trainable_variables)
-      gradients_of_disc4 = disc4_tape.gradient(-loss_g, discriminator4.trainable_variables)
-      gradients_of_disc9 = disc9_tape.gradient(-loss_g, discriminator9.trainable_variables)
-
-      enc4_optimizer.apply_gradients(zip(gradients_of_enc4, encoder4.trainable_variables))
-      enc9_optimizer.apply_gradients(zip(gradients_of_enc9, encoder9.trainable_variables))
-      gen_start_optimizer.apply_gradients(zip(gradients_of_gen_start, generator_start.trainable_variables))
-      recon_optimizer.apply_gradients(zip(gradients_of_recon, reconstructor.trainable_variables))
-      trafo_optimizer.apply_gradients(zip(gradients_of_trafo, transformator.trainable_variables))
-      mask_optimizer.apply_gradients(zip(gradients_of_mask, mask.trainable_variables))
-      disc4_optimizer.apply_gradients(zip(gradients_of_disc4, discriminator4.trainable_variables))      
-      disc9_optimizer.apply_gradients(zip(gradients_of_disc9, discriminator9.trainable_variables))
-
-      print('###################################################################')
-      #print('z_as4: ', tf.reduce_max(z_as4), tf.reduce_min(z_as4))
-      #print('gen_from_pred4: ', tf.reduce_max(gen_from_pred4), tf.reduce_min(gen_from_pred4))
-      #print('recon_from_pred4: ', tf.reduce_max(recon_from_pred4), tf.reduce_min(recon_from_pred4))
-      print('real_output4: ', tf.reduce_max(real_output4), tf.reduce_min(real_output4))
-      print('recon_output4: ', tf.reduce_max(recon_output4), tf.reduce_min(recon_output4))
-      print('trafo_output4: ', tf.reduce_max(trafo_output4), tf.reduce_min(trafo_output4))
-      print('comp_output4: ', tf.reduce_max(comp_output4), tf.reduce_min(comp_output4), tf.reduce_mean(comp_output4))
-      #print('comp_output9: ', tf.reduce_max(comp_output9), tf.reduce_min(comp_output9), tf.reduce_mean(comp_output9))
-      print('loss_g: ', tf.reduce_max(loss_g), tf.reduce_min(loss_g))
-      #print('loss_gan_real4: ', tf.reduce_max(loss_gan_p4_real), tf.reduce_min(loss_gan_p4_real))
-      #print('loss_gan_recon4: ', tf.reduce_max(loss_gan_p4_recon), tf.reduce_min(loss_gan_p4_recon))
-      #print('loss_gan_trafo4: ', tf.reduce_max(loss_gan_p4_trafo), tf.reduce_min(loss_gan_p4_trafo))
-      #print('loss_gan_comp4: ', tf.reduce_max(loss_gan_p4_comp), tf.reduce_min(loss_gan_p4_comp))
-      #print('loss_gan_real9: ', tf.reduce_max(loss_gan_p9_real), tf.reduce_min(loss_gan_p9_real))
-      #print('loss_gan_recon9: ', tf.reduce_max(loss_gan_p9_recon), tf.reduce_min(loss_gan_p9_recon))
-      #print('loss_gan_trafo9: ', tf.reduce_max(loss_gan_p9_trafo), tf.reduce_min(loss_gan_p9_trafo))
-      #print('loss_gan_comp9: ', tf.reduce_max(loss_gan_p9_comp), tf.reduce_min(loss_gan_p9_comp))
-      print('loss_c: ', tf.reduce_max(loss_c), tf.reduce_min(loss_c))
-      print('loss_r: ', tf.reduce_max(loss_r), tf.reduce_min(loss_r))
-      #print('loss_summed: ', tf.reduce_max(loss_summed), tf.reduce_min(loss_summed))
-      print('loss_cs: ', tf.reduce_max(loss_cs), tf.reduce_min(loss_cs))
-      print('loss_ct: ', tf.reduce_max(loss_ct), tf.reduce_min(loss_ct))
-      print('loss_sm: ', tf.reduce_max(loss_sm), tf.reduce_min(loss_sm))
-      print('loss_en: ', tf.reduce_max(loss_en), tf.reduce_min(loss_en))
-      #print(z_as4.shape, real_output4.shape, loss_g.shape, loss_summed.shape)
+#print(tf.reduce_max(loss_en), tf.reduce_min(loss_en))
+print(tf.reduce_max(comp_output4), tf.reduce_min(comp_output4))
+#tf.math.reduce_sum(abs(mask_from_pred4), axis=[1,2])
+#tf.norm(mask_from_pred4, ord=1)
+#print(tf.reduce_max(pred_comp_from_pred9), tf.reduce_min(pred_comp_from_pred9))
+#tf.math.log(9.70742e-13) = -27 which is harmless
+#print(tf.reduce_max(loss_c), tf.reduce_min(loss_c))
+#plt.imshow(comp_from_pred4[0, :, :, 0] * 127.5 + 127.5, cmap='gray') # still looks very much like the original image since mask is close to 0
+#plt.imshow(images[0, :, :, 0] * 127.5 + 127.5, cmap='gray')
+#print(tf.reduce_max(mask_from_pred4), tf.reduce_min(mask_from_pred4))
 
 
 #for i in  range(10):
