@@ -1,0 +1,57 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+
+# This generator is based on the DCGAN generator. But now, we need 3 outputs and not just one!
+# Therefore tear it apart in the middle. We will use the second part three times to get recon and trafo and mask 
+def make_generator_model_start():
+    model = tf.keras.Sequential()
+    model.add(layers.Dense(7*7*128, use_bias=False, input_shape=(128,)))
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
+    # Create images of size 7*7 with 128 channels, all connected to the 128 nodes of the encoded original image
+    # In the next 2 lines, the tensor is actually reshaped into that channel form
+
+    model.add(layers.Reshape((7, 7, 128)))
+    assert model.output_shape == (None, 7, 7, 128) # Note: None is the batch size
+
+    # now move 5*5*128(channels) filters over the 7*7*128(channels) images in 1,1 strides. Do this for each of the 64 output channels.
+    # 64 is the number of different filters we apply. Because of the big number of input channels, each filter is already huge
+    # The number of parameters here is 5*5*128 (filter weights) *64 (number of filters)
+    model.add(layers.Conv2DTranspose(64, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+    assert model.output_shape == (None, 7, 7, 64)
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
+
+    return model
+    
+ 
+# Now the second part. Apply this three times to get reconstruction and transformation and mask
+# Because of the splitting, I also needed to add the input shape in the first layer of this second part.
+def make_generator_model_end_tanh():   
+    # By taking strides of 2, the size of the image gets doubled in length and width.
+    # This is the case, because we do a backwards convolution. If we get a 7*7 image by taking (2,2)-strides, we must have started with 14*14
+    model = tf.keras.Sequential()
+    model.add(layers.Conv2DTranspose(32, (5, 5), strides=(2, 2), padding='same', use_bias=False, input_shape=(7,7,64)))
+    assert model.output_shape == (None, 14, 14, 32)
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
+
+    model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
+    assert model.output_shape == (None, 28, 28, 1)
+    return model
+
+
+def make_generator_model_end_sigmoid(): # second version to get a mask with values in [0,1] instead of [-1,1] with tanh
+    # By taking strides of 2, the size of the image gets doubled in length and width.
+    # This is the case, because we do a backwards convolution. If we get a 7*7 image by taking (2,2)-strides, we must have started with 14*14
+    model = tf.keras.Sequential()
+    model.add(layers.Conv2DTranspose(32, (5, 5), strides=(2, 2), padding='same', use_bias=False, input_shape=(7,7,64)))
+    assert model.output_shape == (None, 14, 14, 32)
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
+
+    model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='sigmoid'))
+    assert model.output_shape == (None, 28, 28, 1)
+    return model
