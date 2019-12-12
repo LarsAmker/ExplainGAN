@@ -1,0 +1,15 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+import imageio
+import matplotlib.pyplot as plt
+
+
+# inputs of loss_recon are two images, the original one and its reconstruction 
+def loss_recon(x, reconstruction):
+  difference = tf.subtract(x,reconstruction)
+  # reshape 28*28 to one vector in order to apply the l2 norm to it
+  # The -1 in the first dimension make sure that the number of images stays the same, images shall not be combined
+  difference = tf.reshape(difference, [-1,784,1])
+  return tf.math.square(tf.norm(difference, ord=2, axis=1))
