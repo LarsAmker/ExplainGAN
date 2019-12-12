@@ -1,0 +1,12 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+import imageio
+import matplotlib.pyplot as plt
+
+# Test the classifier
+#predicted_classes = classifier.predict(test_images[0:1,:,:,:])
+# The prediction is (as before, 0 means 4 and 1 means 9)
+#predicted_classes
+#np.argmax(predicted_classes, axis=1) # axis=1 needed to look at every couple of values, not the whole tensor at once
