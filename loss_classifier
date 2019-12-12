@@ -1,0 +1,18 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+import imageio
+import matplotlib.pyplot as plt
+
+
+# approach with two functions to avoid if conditions:
+loss_c_boundary = 20 # introduce an upper border for this loss. Reason: At the beginning of training, the mask is close to 0
+# This makes the composites resemble the originals, s.t. the classifier still predicts them as orig. class with super high probability
+# This made the loss go up all the way to actual infinity
+# Is this upper border idea okay? It seems to work at least, now this loss does not make problems
+def loss_classifier4(classifier_result): # used for predicted class 4 images, put comp.s looking like 9s in here
+  return np.minimum(-tf.math.log(classifier_result),loss_c_boundary)
+
+def loss_classifier9(classifier_result): # used for predicted class 9 images
+  return np.minimum(-tf.math.log(1-classifier_result),loss_c_boundary)
