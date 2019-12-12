@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import tensorflow as tf
 from tensorflow.keras import layers
+import numpy as np
 
 # Copied from https://blog.keras.io/building-autoencoders-in-keras.html, added flattening at the end
 # This is the encoder part of a conv. autoencoder applied to MNIST. Notice the MaxPooling. Maybe change later on
