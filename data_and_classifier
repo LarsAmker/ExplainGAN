@@ -1,0 +1,79 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+
+
+# load the data
+(all_train_images, all_train_labels), (all_test_images, all_test_labels) = tf.keras.datasets.mnist.load_data()
+# Throw away everything except the images showing 4s or 9s
+# First just check how many images we should get for each of the digits (they don't appear in the dataset with the same frequency):
+count4 = (all_train_labels==4).sum()
+count9 = (all_train_labels==9).sum()
+#print(count4, count9, 'Number of images remaining:', count4+count9)
+
+# change labels to 0 and 1 in order to have a softmax with 2 labels (not 10 to reach 9) at the end of our classifier
+train_images = []
+train_labels = []
+for i in range(len(all_train_labels)):
+  if all_train_labels[i] == 4:
+    train_images.append(all_train_images[i])
+    train_labels.append(0)    
+  if all_train_labels[i] == 9:
+    train_images.append(all_train_images[i])
+    train_labels.append(1)
+
+# Change formats from list back to array. This is necessary for the reshaping in the next step    
+train_images = np.asarray(train_images)
+train_labels = np.asarray(train_labels)
+#plt.imshow(train_images[0], cmap='gray')
+
+train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
+# Normalize the images to [-1, 1]
+train_images = (train_images-127.5) / 127.5 
+
+
+
+# Do the same filtering and reshaping for the test set:
+count4 = (all_test_labels==4).sum()
+count9 = (all_test_labels==9).sum()
+#print(count4, count9, 'Number of images remaining:', count4+count9)
+
+# change labels to 0 and 1 in order to have a softmax with 2 labels (not 10 to reach 9) at the end of our classifier
+test_images = []
+test_labels = []
+for i in range(len(all_test_labels)):
+  if all_test_labels[i] == 4:
+    test_images.append(all_test_images[i])
+    test_labels.append(0)    
+  if all_test_labels[i] == 9:
+    test_images.append(all_test_images[i])
+    test_labels.append(1)
+    
+# Change formats from list back to array. This is necessary for the reshaping in the next step    
+test_images = np.asarray(test_images)
+test_labels = np.asarray(test_labels)
+# Check works out, we have as many images and labels as we should have and the images match their labels (tested the first few ones with plt.imshow): 
+#print(test_labels)
+#print(len(test_images), len(test_labels))
+#plt.imshow(test_images[0], cmap='gray')
+
+test_images = test_images.reshape(test_images.shape[0], 28, 28, 1).astype('float32')
+# Normalize the images to [-1, 1]
+test_images = (test_images - 127.5) / 127.5
+#test_images.shape
+
+
+
+# classifier pretty much copied from tf tutorial "Basic image classification". Changed the input_shape in Flatten and only 2 nodes in Softmax
+classifier = tf.keras.Sequential([
+    tf.keras.layers.Flatten(input_shape=(28, 28,1)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(2, activation='softmax')
+])
+classifier.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+classifier.fit(train_images, train_labels, epochs=10)
+#test_loss, test_acc = classifier.evaluate(test_images,  test_labels, verbose=2)
+#print('\nTest accuracy:', test_acc)
