@@ -1,3 +1,8 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+
 # just some testing of how cmap='gray' works
 masktest = tf.ones([3,3], tf.float32)
 plt.figure(figsize=(10,10))
