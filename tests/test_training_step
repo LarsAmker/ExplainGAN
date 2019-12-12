@@ -152,3 +152,9 @@ def train_step(images): # images is the whole batch of real images fed into the 
       print('loss_sm: ', tf.reduce_max(loss_sm), tf.reduce_min(loss_sm))
       print('loss_en: ', tf.reduce_max(loss_en), tf.reduce_min(loss_en))
       #print(z_as4.shape, real_output4.shape, loss_g.shape, loss_summed.shape)
+
+
+#for i in  range(10):
+  #train_step(test_images[0:1000,:,:,:])
+  #test_images[0:1,:,:,:].shape
+  #generate_and_save_images(1, train_images)
