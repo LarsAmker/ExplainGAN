@@ -1,0 +1,20 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+
+# pretty much copied from tf tutorial "Basic image classification". Changed the input_shape in Flatten and only 2 nodes in Softmax
+classifier = tf.keras.Sequential([
+    tf.keras.layers.Flatten(input_shape=(28, 28,1)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(2, activation='softmax')
+])
+
+classifier.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+classifier.fit(train_images, train_labels, epochs=10)
+
+#test_loss, test_acc = classifier.evaluate(test_images,  test_labels, verbose=2)
+#print('\nTest accuracy:', test_acc)
