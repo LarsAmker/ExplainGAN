@@ -5,7 +5,7 @@ import numpy as np
 
 # Copied from https://blog.keras.io/building-autoencoders-in-keras.html, added flattening at the end
 # Also changed the activation function from relu to sigmoid to not get exploding latent variables
-# Maybe change this back if I train the encoder separately before training the rest of ExplainGAN
+# Maybe change this back if I train the encoder separately before training the rest of ExplainGAN. Then, also move the flattening
 # This is the encoder part of a conv. autoencoder applied to MNIST. Notice the MaxPooling. Maybe change later on
 def make_encoder_model():
     model = tf.keras.Sequential()
