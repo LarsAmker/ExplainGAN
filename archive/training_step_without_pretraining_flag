@@ -1,3 +1,6 @@
+# If I need to get back to this, also delete the extra argument "pretraining_flag" in the train function and its calls
+# Here is the old code (20191215):
+
 # From DCGAN original: Notice the use of `tf.function`
 # This annotation causes the function to be "compiled".
 #@tf.function # produces an error in my code, if I leave it away there is no problem
