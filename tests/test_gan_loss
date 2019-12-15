@@ -1,0 +1,16 @@
+# use the split-up gan loss to see in detail how the different generated images behave
+# do the same for the predicted 4s if needed
+loss_gan_p9_real = loss_gan_real(real_output9)
+loss_gan_p9_recon = loss_gan_recon(recon_output9)
+loss_gan_p9_trafo = loss_gan_trafo(trafo_output9)
+loss_gan_p9_comp = loss_gan_comp(comp_output9)
+loss_gan_pred9 = loss_gan_p9_real + loss_gan_p9_recon + loss_gan_p9_trafo + loss_gan_p9_comp
+
+#print('loss_gan_real4: ', tf.reduce_max(loss_gan_p4_real), tf.reduce_min(loss_gan_p4_real))
+#print('loss_gan_recon4: ', tf.reduce_max(loss_gan_p4_recon), tf.reduce_min(loss_gan_p4_recon))
+#print('loss_gan_trafo4: ', tf.reduce_max(loss_gan_p4_trafo), tf.reduce_min(loss_gan_p4_trafo))
+#print('loss_gan_comp4: ', tf.reduce_max(loss_gan_p4_comp), tf.reduce_min(loss_gan_p4_comp))
+#print('loss_gan_real9: ', tf.reduce_max(loss_gan_p9_real), tf.reduce_min(loss_gan_p9_real))
+#print('loss_gan_recon9: ', tf.reduce_max(loss_gan_p9_recon), tf.reduce_min(loss_gan_p9_recon))
+#print('loss_gan_trafo9: ', tf.reduce_max(loss_gan_p9_trafo), tf.reduce_min(loss_gan_p9_trafo))
+#print('loss_gan_comp9: ', tf.reduce_max(loss_gan_p9_comp), tf.reduce_min(loss_gan_p9_comp))
