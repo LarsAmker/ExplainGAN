@@ -1,0 +1,26 @@
+# Let's look at how a normal case is different from that of a pneumonia case. 
+# We will look at somes samples from our training data itself.
+# Get few samples for both the classes
+pneumonia_samples = (train_data[train_data['label']==1]['image'].iloc[:5]).tolist()
+normal_samples = (train_data[train_data['label']==0]['image'].iloc[:5]).tolist()
+
+# Concat the data in a single list and del the above two list
+samples = pneumonia_samples + normal_samples
+del pneumonia_samples, normal_samples
+
+# Plot the data 
+f, ax = plt.subplots(2,5, figsize=(24,8))
+for i in range(10):
+    img = imread(samples[i])
+    ax[i//5, i%5].imshow(img, cmap='gray')
+    if i<5:
+        ax[i//5, i%5].set_title("Pneumonia")
+    else:
+        ax[i//5, i%5].set_title("Normal")
+    ax[i//5, i%5].axis('off')
+    ax[i//5, i%5].set_aspect('auto')
+plt.show()
+
+# If you look carefully, then there are some cases where you won't be able to differentiate between a 
+# normal case and a pneumonia case with the naked eye. There is one case in the above plot, at least for me,
+# which is too much confusing. If we can build a robust classifier, it would be a great assist to the doctor too.
