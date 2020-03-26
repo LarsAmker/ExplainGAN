@@ -11,3 +11,7 @@ plt.xlabel('Case type', fontsize=12)
 plt.ylabel('Count', fontsize=12)
 plt.xticks(range(len(cases_count.index)), ['Normal(0)', 'Pneumonia(1)'])
 plt.show()
+
+# As you can see the data is highly imbalanced. We have almost with thrice pneumonia cases here as compared to the normal cases. 
+# This situation is very normal when it comes to medical data. The data will always be imbalanced. 
+# Either there will be too many normal cases or there will be too many cases with the disease.
