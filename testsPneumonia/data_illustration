@@ -1,0 +1,13 @@
+# How many samples for each class are there in the dataset?
+# Get the counts for each class
+cases_count = train_data['label'].value_counts()
+print(cases_count)
+
+# Plot the results 
+plt.figure(figsize=(10,8))
+sns.barplot(x=cases_count.index, y= cases_count.values)
+plt.title('Number of cases', fontsize=14)
+plt.xlabel('Case type', fontsize=12)
+plt.ylabel('Count', fontsize=12)
+plt.xticks(range(len(cases_count.index)), ['Normal(0)', 'Pneumonia(1)'])
+plt.show()
