@@ -1,0 +1,28 @@
+# Upload the vgg16 file manually in the left hand pane
+# We will initialize the weights of first two convolutions with imagenet weights. 
+# They are contained in the vgg16 file listed on NAIN's kernel under data. Unzip it after uploading.
+
+!unzip vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5.zip
+
+# THIS PART SEEMS TO BE NO LONGER WORKING THE SAME AFTER THE MIGRATION TO TENSORFLOW 2
+# BUT THE NETWORK STILL TRAINS FINE WITHOUT SETTING THESE WEIGHTS. SO JUST LEAVE THIS AWAY AND WE ARE GOOD
+
+# Open the VGG16 weight file.
+f = h5py.File('../content/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5', 'r')
+
+# Select the layers for which you want to set weight.
+
+w,b = f['block1_conv1']['block1_conv1_W_1:0'], f['block1_conv1']['block1_conv1_b_1:0']
+model.layers[1].set_weights = [w,b]
+
+w,b = f['block1_conv2']['block1_conv2_W_1:0'], f['block1_conv2']['block1_conv2_b_1:0']
+model.layers[2].set_weights = [w,b]
+
+w,b = f['block2_conv1']['block2_conv1_W_1:0'], f['block2_conv1']['block2_conv1_b_1:0']
+model.layers[4].set_weights = [w,b]
+
+w,b = f['block2_conv2']['block2_conv2_W_1:0'], f['block2_conv2']['block2_conv2_b_1:0']
+model.layers[5].set_weights = [w,b]
+
+f.close()
+#model.summary()
