@@ -9,7 +9,7 @@ The folder "tests" contains several code snippets from the original old notebook
 ### Pneumonia
 
 NAINs kaggle kernels are both written in tensorflow 1 and no longer compatible with tensorflow 2.
-Old versions can be found in the archiveis copied 
+Old versions can be found in the archives 
 In any case, they needed to be completed with the upload steps, this is included in every pneumonia file here on github
 
 Now try to get the kernel working again in tf2, then make it compact and develop ExplainGAN for it.
