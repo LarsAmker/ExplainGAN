@@ -1,0 +1,7 @@
+# does produce errors when training though. Therefore stick with the shape dependent version
+def loss_recon_test(x, reconstruction):
+  difference = tf.subtract(x,reconstruction)
+  # reshape 28*28 to one vector in order to apply the l2 norm to it
+  # The -1 in the first dimension make sure that the number of images stays the same, images shall not be combined
+  difference = tf.reshape(difference, [-1,x.shape[0]*x.shape[1],1])
+  return tf.math.square(tf.norm(difference, ord=2, axis=1))
