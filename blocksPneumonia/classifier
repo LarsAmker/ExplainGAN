@@ -1,0 +1,40 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+
+# changed the format of this method due to compatibility with tensorflow 2
+# The original version from NAIN worked with "x=...(x)" steps, my theory is that this x is the placeholder that lead to errors
+
+def build_model():
+  model = tf.keras.Sequential()
+  model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same', name='Conv1_1', input_shape=[224, 224, 3]))
+  model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same', name='Conv1_2', input_shape=[224, 224, 3]))
+  model.add(layers.MaxPooling2D((2,2), name='pool'))
+
+  model.add(layers.SeparableConv2D(128, (3,3), activation='relu', padding='same', name='Conv2_1'))
+  model.add(layers.SeparableConv2D(128, (3,3), activation='relu', padding='same', name='Conv2_2'))
+  model.add(layers.MaxPooling2D((2,2), name='pool2'))
+
+  model.add(layers.SeparableConv2D(256, (3,3), activation='relu', padding='same', name='Conv3_1'))
+  model.add(layers.BatchNormalization(name='bn1'))
+  model.add(layers.SeparableConv2D(256, (3,3), activation='relu', padding='same', name='Conv3_2'))
+  model.add(layers.BatchNormalization(name='bn2'))
+  model.add(layers.SeparableConv2D(256, (3,3), activation='relu', padding='same', name='Conv3_3'))
+  model.add(layers.MaxPooling2D((2,2), name='pool3'))
+
+  model.add(layers.SeparableConv2D(512, (3,3), activation='relu', padding='same', name='Conv4_1'))
+  model.add(layers.BatchNormalization(name='bn3'))
+  model.add(layers.SeparableConv2D(512, (3,3), activation='relu', padding='same', name='Conv4_2'))
+  model.add(layers.BatchNormalization(name='bn4'))
+  model.add(layers.SeparableConv2D(512, (3,3), activation='relu', padding='same', name='Conv4_3'))
+  model.add(layers.MaxPooling2D((2,2), name='pool4'))
+
+  model.add(layers.Flatten(name='flatten'))
+  model.add(layers.Dense(1024, activation='relu', name='fc1'))
+  model.add(layers.Dropout(0.7, name='dropout1'))
+  model.add(layers.Dense(512, activation='relu', name='fc2'))
+  model.add(layers.Dropout(0.5, name='dropout2'))
+  model.add(layers.Dense(2, activation='softmax', name='fc3'))
+  
+  return model
