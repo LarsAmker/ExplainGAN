@@ -1,0 +1,28 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+
+# Copied from https://blog.keras.io/building-autoencoders-in-keras.html, added flattening at the end
+# Also changed the activation function from relu to sigmoid to not get exploding latent variables
+# Maybe change this back if I train the encoder separately before training the rest of ExplainGAN. Then, also move the flattening
+
+# Change input shape, but use only one of the three RGB channels
+def make_encoder_model(activ_fct):
+    model = tf.keras.Sequential()
+    model.add(layers.Conv2D(16, (3, 3), activation=activ_fct, padding='same', use_bias=True,
+                                     input_shape=[224, 224, 3]))
+    model.add(layers.MaxPooling2D((2,2), padding='same'))
+
+    model.add(layers.Conv2D(8, (3, 3), activation=activ_fct, padding='same', use_bias=True))
+    model.add(layers.MaxPooling2D((2,2), padding='same'))
+
+    model.add(layers.Conv2D(8, (3, 3), activation=activ_fct, padding='same', use_bias=True))
+    model.add(layers.MaxPooling2D((2,2), padding='same'))
+    model.add(layers.Conv2D(8, (3, 3), activation=activ_fct, padding='same', use_bias=True))
+    model.add(layers.MaxPooling2D((2,2), padding='same'))
+    model.add(layers.Flatten())
+    
+    return model
+# At this point the representation is (4, 4, 8) i.e. 128-dimensional
+# The convolutions here don't decrease the 2D dimension because they have default (1,1) strides. The MaxPooling does
