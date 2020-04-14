@@ -1,0 +1,28 @@
+# Copied from MNIST, no difference here
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+import imageio
+import matplotlib.pyplot as plt
+
+
+# split the GAN loss: The first two lines of formula (8) from Silberman are about original images x predicted as class j
+# The other 2 lines are about images predicted as class 1-j -> Sort differently here, put all same predictions together
+# real_output is the array of discriminator predictions on the real images
+# recon_output is the array of discriminator predictions on the recon images
+def loss_gan(real_output, recon_output, trafo_output, comp_output):
+  real_loss = tf.math.log(real_output)
+  recon_loss = tf.math.log(1-recon_output)
+  trafo_loss = tf.math.log(1-trafo_output) # use the other discriminator for these two
+  comp_loss = tf.math.log(1-comp_output)
+  return real_loss + recon_loss + trafo_loss + comp_loss
+
+# Idea for the future: Use one- (or 2-) sided label smoothing to keep gradients finite (--> Goodfellow2016)
+def loss_gan_1side_smooth(real_output, recon_output, trafo_output, comp_output):
+  real_loss = tf.math.log(real_output)*0.9 + tf.math.log(1-real_output)*0.1
+  recon_loss = tf.math.log(1-recon_output)
+  trafo_loss = tf.math.log(1-trafo_output) # use the other discriminator for these two
+  comp_loss = tf.math.log(1-comp_output)
+  return real_loss + recon_loss + trafo_loss + comp_loss
