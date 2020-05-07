@@ -1,0 +1,15 @@
+# Encoder takes grayscale images as input -> only pick one of the 3 RGB channels (last dimension of input tensor)
+encoded = encoder0(test_data[0:1,:,:,1])
+gen_started = generator_start(encoded)
+#gen_started # shape (1,7,7,64)
+reconstructed = reconstructor(gen_started)
+#reconstructed # shape (1,224,224,1) like a grayscale x-ray scan
+compos = create_composite(valid_data[0:1,:,:,0], reconstructed[:,:,:,0], reconstructed[:,:,:,0])
+#reconstructed.shape
+#compos
+compos_RGB = np.stack([compos, compos, compos], axis=3)
+#compos.shape
+disced_start = discriminator0(reconstructed)
+#disced_start
+disced = discriminator_end(disced_start)
+disced
