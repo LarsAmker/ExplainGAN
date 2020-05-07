@@ -1,0 +1,43 @@
+images = valid_data
+predicted_classes = classifier.predict(images) # model takes (224,224,3) as input
+predicted_classes = np.argmax(predicted_classes, axis=1) # now we have the actual predictions
+predicted_classes = tf.reshape(predicted_classes, [-1,1]) # make it compatible with tensors below
+predicted_classes = tf.cast(predicted_classes, tf.float32) # change type to float for multiplications
+predicted_classes
+
+images_grayscale = images[:,:,:,0:1]
+#images_grayscale.shape
+
+
+
+with tf.GradientTape() as enc0_tape, tf.GradientTape() as enc1_tape, tf.GradientTape() as gen_start_tape, tf.GradientTape() as recon_tape:
+  z_as0 = encoder0(images)
+  z_as1 = encoder1(images)
+  gen_from_pred0 = generator_start(z_as0)
+  gen_from_pred1 = generator_start(z_as1)
+  recon_from_pred0 = reconstructor(gen_from_pred0)
+  recon_from_pred1 = reconstructor(gen_from_pred1)
+  print("recon0 shape:", recon_from_pred0.shape)
+  print("recon1 shape:", recon_from_pred1.shape)
+  print("images_grayscale shape:", images_grayscale.shape)
+
+  loss_recon0 = loss_recon(images_grayscale, recon_from_pred0)
+  loss_recon1 = loss_recon(images_grayscale, recon_from_pred1)
+  print("loss_recon0 shape:", loss_recon0.shape)
+  loss_r0 = tf.math.multiply(1-predicted_classes, loss_recon0) # set the loss for the wrong recons to 0
+  loss_r1 = tf.math.multiply(predicted_classes, loss_recon1) # set the loss for the wrong recons to 0
+  loss_r = (loss_r0 + loss_r1)*0.0005
+  loss_summed = loss_r
+  print("loss_summed shape:", loss_summed.shape)
+
+  gradients_of_enc0 = enc0_tape.gradient(loss_summed, encoder0.trainable_variables)
+  gradients_of_enc1 = enc1_tape.gradient(loss_summed, encoder1.trainable_variables)
+  gradients_of_gen_start = gen_start_tape.gradient(loss_summed, generator_start.trainable_variables)
+  gradients_of_recon = recon_tape.gradient(loss_summed, reconstructor.trainable_variables)
+
+  enc0_optimizer.apply_gradients(zip(gradients_of_enc0, encoder0.trainable_variables))
+  enc1_optimizer.apply_gradients(zip(gradients_of_enc1, encoder1.trainable_variables))
+  gen_start_optimizer.apply_gradients(zip(gradients_of_gen_start, generator_start.trainable_variables))
+  recon_optimizer.apply_gradients(zip(gradients_of_recon, reconstructor.trainable_variables))
+
+  print('loss_r: ', tf.reduce_max(loss_r), tf.reduce_min(loss_r), tf.reduce_mean(loss_r))
