@@ -1,0 +1,2 @@
+dot_img_file = '/content/model.png'
+tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True, show_layer_names=False, rankdir='TD')
