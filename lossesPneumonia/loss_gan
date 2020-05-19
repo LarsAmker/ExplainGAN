@@ -26,3 +26,12 @@ def loss_gan_1side_smooth(real_output, recon_output, trafo_output, comp_output):
   trafo_loss = tf.math.log(1-trafo_output) # use the other discriminator for these two
   comp_loss = tf.math.log(1-comp_output)
   return real_loss + recon_loss + trafo_loss + comp_loss
+
+# 2-sided smoothing with only 0.05 smoothing
+def loss_gan_smoothed(real_output, recon_output, trafo_output, comp_output):
+  real_loss = tf.math.log(real_output)*0.95 + tf.math.log(1-real_output)*0.05
+  #recon_loss = tf.math.log(1-recon_output)
+  recon_loss = 0
+  trafo_loss = tf.math.log(1-trafo_output)*0.95 + tf.math.log(trafo_output)*0.05   
+  comp_loss = tf.math.log(1-comp_output)*0.95 + tf.math.log(comp_output)*0.05
+  return real_loss + recon_loss + trafo_loss + comp_loss
